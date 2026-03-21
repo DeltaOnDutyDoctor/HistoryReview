@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>反直覺歷史互動教學</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+  :root {
+    --bg: #080d1a;
+    --bg2: #0d1526;
+    --card: #111827;
+    --border: #1e2d4a;
+    --accent: #f59e0b;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --correct: #10b981;
+    --wrong: #ef4444;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: "Noto Sans TC", Arial, sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh; padding: 0 0 60px;
+  }
+
+  /* HEADER */
+  header {
+    background: linear-gradient(135deg, #0d1526 0%, #1a1040 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 40px 20px 36px;
+    text-align: center;
+    position: relative; overflow: hidden;
+  }
+  header::before {
+    content:''; position:absolute; inset:0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(245,158,11,0.12) 0%, transparent 70%);
+  }
+  .header-tag {
+    display: inline-block; background: rgba(245,158,11,0.15);
+    border: 1px solid rgba(245,158,11,0.4); color: var(--accent);
+    font-size: .75rem; letter-spacing: 3px; padding: 5px 14px;
+    border-radius: 20px; margin-bottom: 16px; text-transform: uppercase;
+  }
+  header h1 {
+    font-size: clamp(1.6rem, 5vw, 2.6rem); font-weight: 900;
+    line-height: 1.2; position: relative;
+  }
+  header h1 span { color: var(--accent); }
+  header p {
+    color: var(--muted); margin-top: 10px; font-size: .95rem; position: relative;
+  }
+
+  /* PROGRESS */
+  .progress-wrap {
+    max-width: 680px; margin: 28px auto 0; padding: 0 20px; position: relative;
+  }
+  .progress-info { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: .8rem; color: var(--muted); }
+  .progress-bar { height: 4px; background: var(--border); border-radius: 4px; overflow: hidden; }
+  .progress-fill {
+    height: 100%; background: linear-gradient(90deg, var(--accent), #fbbf24);
+    border-radius: 4px; transition: width .5s ease;
+  }
+
+  /* MAIN */
+  main { max-width: 680px; margin: 0 auto; padding: 32px 20px 0; }
+
+  /* QUIZ CARD */
+  .quiz-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; overflow: hidden;
+    margin-bottom: 24px; transition: .3s;
+    opacity: 0; transform: translateY(24px);
+    animation: fadeUp .5s forwards;
+  }
+  @keyframes fadeUp { to { opacity:1; transform:translateY(0); } }
+
+  .card-header {
+    padding: 24px 28px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex; gap: 14px; align-items: flex-start;
+  }
+  .q-num {
+    flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%;
+    background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4);
+    color: var(--accent); font-weight: 700; font-size: .85rem;
+    display: flex; align-items: center; justify-content: center;
+    margin-top: 2px;
+  }
+  .q-text { font-size: 1.05rem; font-weight: 700; line-height: 1.6; }
+
+  .options { padding: 20px 28px; display: flex; flex-direction: column; gap: 10px; }
+
+  .opt-btn {
+    width: 100%; background: var(--bg2); border: 1px solid var(--border);
+    color: var(--text); padding: 14px 18px; border-radius: 10px;
+    font-size: .95rem; font-family: inherit; cursor: pointer;
+    text-align: left; display: flex; align-items: center; gap: 12px;
+    transition: .25s; position: relative; overflow: hidden;
+  }
+  .opt-btn:not(:disabled):hover {
+    border-color: var(--accent); background: rgba(245,158,11,0.06);
+    transform: translateX(4px);
+  }
+  .opt-label {
+    flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%;
+    border: 1px solid var(--border); display: flex; align-items: center;
+    justify-content: center; font-size: .8rem; font-weight: 700;
+    transition: .25s;
+  }
+  .opt-btn:not(:disabled):hover .opt-label { border-color: var(--accent); color: var(--accent); }
+
+  /* States */
+  .opt-btn.correct {
+    border-color: var(--correct); background: rgba(16,185,129,0.1);
+    animation: correctPulse .4s ease;
+  }
+  .opt-btn.correct .opt-label { background: var(--correct); border-color: var(--correct); color: #fff; }
+  .opt-btn.wrong {
+    border-color: var(--wrong); background: rgba(239,68,68,0.1);
+    animation: shake .35s ease;
+  }
+  .opt-btn.wrong .opt-label { background: var(--wrong); border-color: var(--wrong); color: #fff; }
+  .opt-btn.dimmed { opacity: .35; }
+  .opt-btn:disabled { cursor: default; }
+
+  @keyframes correctPulse {
+    0%   { box-shadow: 0 0 0 0 rgba(16,185,129,0.5); }
+    70%  { box-shadow: 0 0 0 10px rgba(16,185,129,0); }
+    100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+  }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20%     { transform: translateX(-6px); }
+    40%     { transform: translateX(6px); }
+    60%     { transform: translateX(-4px); }
+    80%     { transform: translateX(4px); }
+  }
+
+  /* ANSWER BOX */
+  .answer-box {
+    margin: 0 28px 24px; padding: 16px 20px;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 10px; font-size: .9rem; color: var(--muted);
+    line-height: 1.7; display: none;
+    animation: fadeUp .35s forwards;
+  }
+  .answer-box .ans-title {
+    font-weight: 700; color: var(--text); margin-bottom: 6px;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  /* RESULT PANEL */
+  #result {
+    display: none; background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 40px 28px; text-align: center;
+    animation: fadeUp .5s forwards;
+  }
+  #result .score-ring {
+    width: 100px; height: 100px; border-radius: 50%;
+    border: 4px solid var(--accent); margin: 0 auto 20px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2rem; font-weight: 900; color: var(--accent);
+    background: rgba(245,158,11,0.08);
+  }
+  #result h2 { font-size: 1.6rem; margin-bottom: 10px; }
+  #result p { color: var(--muted); margin-bottom: 28px; }
+  #result .restart-btn {
+    background: var(--accent); color: #0a0d14; border: none;
+    padding: 14px 36px; border-radius: 8px; font-size: 1rem;
+    font-weight: 700; cursor: pointer; font-family: inherit;
+    transition: .3s;
+  }
+  #result .restart-btn:hover { background: #fbbf24; transform: translateY(-2px); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-tag">互動測驗</div>
+  <h1>🔥 反直覺歷史<span>：敵人最後會變自己人？</span></h1>
+  <p>你以為你懂歷史，但歷史可能比你想的更出乎意料。</p>
+  <div class="progress-wrap">
+    <div class="progress-info">
+      <span id="prog-text">第 1 題，共 4 題</span>
+      <span id="prog-score">答對 0 題</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+  </div>
+</header>
+
+<main id="quiz-main">
+
+  <div class="quiz-card" style="animation-delay:.1s">
+    <div class="card-header">
+      <div class="q-num">1</div>
+      <div class="q-text">如果兩個民族彼此仇恨、戰爭不斷，最後最可能的結局是？</div>
+    </div>
+    <div class="options">
+      <button class="opt-btn" onclick="answer(this,false,'q1')"><span class="opt-label">A</span>永遠仇恨，沒有終點</button>
+      <button class="opt-btn" onclick="answer(this,false,'q1')"><span class="opt-label">B</span>完全分裂，各自獨立</button>
+      <button class="opt-btn" onclick="answer(this,false,'q1')"><span class="opt-label">C</span>其中一方被完全消滅</button>
+      <button class="opt-btn" onclick="answer(this,true,'q1')"><span class="opt-label">D</span>逐漸融合，成為同一民族</button>
+    </div>
+    <div class="answer-box" id="q1">
+      <div class="ans-title">✅ 正解：融合</div>
+      歷史上，民族融合是極為常見的結果。今日許多「民族」其實都是數個族群長期混合、通婚、文化交融後的產物，並非從來就是純粹一體的。
+    </div>
+  </div>
+
+  <div class="quiz-card" style="animation-delay:.2s">
+    <div class="card-header">
+      <div class="q-num">2</div>
+      <div class="q-text">征服者通常會如何對待被征服者的文化？</div>
+    </div>
+    <div class="options">
+      <button class="opt-btn" onclick="answer(this,false,'q2')"><span class="opt-label">A</span>強制消滅對方的一切文化</button>
+      <button class="opt-btn" onclick="answer(this,false,'q2')"><span class="opt-label">B</span>完全保留自己文化，互不干涉</button>
+      <button class="opt-btn" onclick="answer(this,true,'q2')"><span class="opt-label">C</span>開始吸收融合，形成新文化</button>
+    </div>
+    <div class="answer-box" id="q2">
+      <div class="ans-title">✅ 正解：融合</div>
+      統治遠比征服困難。為了有效管理被征服者，統治者往往需要學習當地語言、採用當地制度，最終雙方文化互相滲透，形成全新的混合文化。
+    </div>
+  </div>
+
+  <div class="quiz-card" style="animation-delay:.3s">
+    <div class="card-header">
+      <div class="q-num">3</div>
+      <div class="q-text">被外族統治後，社會最常出現什麼狀態？</div>
+    </div>
+    <div class="options">
+      <button class="opt-btn" onclick="answer(this,false,'q3')"><span class="opt-label">A</span>本土文化完全消失</button>
+      <button class="opt-btn" onclick="answer(this,false,'q3')"><span class="opt-label">B</span>社會完全不變，維持原狀</button>
+      <button class="opt-btn" onclick="answer(this,true,'q3')"><span class="opt-label">C</span>雙文化並存，之後逐漸融合</button>
+    </div>
+    <div class="answer-box" id="q3">
+      <div class="ans-title">✅ 正解：雙文化並存</div>
+      外族統治初期，社會通常會形成雙語、雙階層的並存狀態，例如諾曼征服英格蘭後的法語與英語共存。時間一長，兩種文化便逐漸融為一體。
+    </div>
+  </div>
+
+  <div class="quiz-card" style="animation-delay:.4s">
+    <div class="card-header">
+      <div class="q-num">4</div>
+      <div class="q-text">從歷史角度來看，「民族」到底是什麼？</div>
+    </div>
+    <div class="options">
+      <button class="opt-btn" onclick="answer(this,false,'q4')"><span class="opt-label">A</span>天生固定，與生俱來</button>
+      <button class="opt-btn" onclick="answer(this,false,'q4')"><span class="opt-label">B</span>血統純粹，不容混雜</button>
+      <button class="opt-btn" onclick="answer(this,true,'q4')"><span class="opt-label">C</span>歷史混合的產物，不斷演變</button>
+    </div>
+    <div class="answer-box" id="q4">
+      <div class="ans-title">✅ 正解：歷史混合的產物</div>
+      幾乎所有民族都是歷史融合的結果。「血統純粹」的民族在現實中並不存在，民族認同是文化、語言、歷史記憶共同建構出來的，而非固定不變的生物特徵。
+    </div>
+  </div>
+
+  <div id="result">
+    <div class="score-ring" id="score-display">0/4</div>
+    <h2 id="result-title">測驗完成！</h2>
+    <p id="result-desc">讓我們看看你對反直覺歷史的掌握程度。</p>
+    <button class="restart-btn" onclick="restart()">🔄 再挑戰一次</button>
+  </div>
+
+</main>
+
+<script>
+  let answered = 0, correct = 0;
+  const total = 4;
+
+  function answer(btn, isCorrect, qid) {
+    const opts = btn.closest('.options').querySelectorAll('.opt-btn');
+    opts.forEach(b => b.disabled = true);
+
+    if (isCorrect) {
+      btn.classList.add('correct');
+      correct++;
+    } else {
+      btn.classList.add('wrong');
+      // highlight the correct one
+      opts.forEach(b => {
+        if (!b.classList.contains('wrong')) b.classList.add('dimmed');
+      });
+      // find correct btn
+      opts.forEach(b => {
+        if (b.onclick.toString().includes('true')) {
+          b.classList.remove('dimmed');
+          b.classList.add('correct');
+        }
+      });
+    }
+
+    answered++;
+    updateProgress();
+
+    // show answer box
+    setTimeout(() => {
+      const box = document.getElementById(qid);
+      box.style.display = 'block';
+      if (!isCorrect) {
+        box.querySelector('.ans-title').textContent = '❌ 答錯了！正解如下：';
+        box.querySelector('.ans-title').style.color = 'var(--wrong)';
+        box.querySelector('.ans-title').textContent = '💡 正解：' + box.querySelector('.ans-title').textContent.replace('✅ 正解：','').replace('❌ 答錯了！正解如下：','');
+      }
+    }, 300);
+
+    if (answered === total) {
+      setTimeout(showResult, 800);
+    }
+  }
+
+  function updateProgress() {
+    const pct = (answered / total) * 100;
+    document.getElementById('prog-fill').style.width = pct + '%';
+    document.getElementById('prog-text').textContent = answered < total
+      ? `第 ${answered + 1} 題，共 ${total} 題`
+      : `已完成所有題目`;
+    document.getElementById('prog-score').textContent = `答對 ${correct} 題`;
+  }
+
+  function showResult() {
+    document.getElementById('result').style.display = 'block';
+    document.getElementById('score-display').textContent = `${correct}/${total}`;
+    const pct = correct / total;
+    let title, desc;
+    if (pct === 1)      { title = '🏆 完美！歷史學家等級'; desc = '你完全掌握了歷史的反直覺本質，邏輯清晰，令人佩服！'; }
+    else if (pct >= .75){ title = '🎉 表現優異！'; desc = '你對歷史融合有很好的理解，只差一步就是滿分！'; }
+    else if (pct >= .5) { title = '📚 還不錯！'; desc = '有些反直覺概念還需要多熟悉，再挑戰一次吧！'; }
+    else                { title = '🤔 歷史比你想的複雜！'; desc = '不用灰心，反直覺本來就不容易，看看解說再試一次！'; }
+    document.getElementById('result-title').textContent = title;
+    document.getElementById('result-desc').textContent = desc;
+    document.getElementById('result').scrollIntoView({behavior:'smooth', block:'center'});
+  }
+
+  function restart() {
+    answered = 0; correct = 0;
+    document.getElementById('prog-fill').style.width = '0%';
+    document.getElementById('prog-text').textContent = `第 1 題，共 ${total} 題`;
+    document.getElementById('prog-score').textContent = '答對 0 題';
+    document.getElementById('result').style.display = 'none';
+    document.querySelectorAll('.opt-btn').forEach(b => {
+      b.disabled = false;
+      b.classList.remove('correct','wrong','dimmed');
+    });
+    document.querySelectorAll('.answer-box').forEach(b => b.style.display = 'none');
+    // reset answer titles
+    document.querySelectorAll('.ans-title').forEach(t => {
+      if(!t.textContent.startsWith('✅')) t.textContent = '✅ ' + t.textContent.replace('💡 ','');
+      t.style.color = '';
+    });
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+</script>
+</body>
+</html>
